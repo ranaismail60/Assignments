@@ -30,7 +30,7 @@ def neighbors(grid, R, C, r, c):
         nr, nc = r+dr, c+dc
         if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] != WALL:
             yield (nr, nc)
-
+#Path Rebuild 
 def rebuild_path(came_from, node):
     path = []
     while node:
