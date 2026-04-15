@@ -1,16 +1,53 @@
-### This is Informed Seaches With Python Tkinter UI
+# 🧩 Sudoku Solver using CSP
 
-## All the Code is place in Main.py
+This project implements a **Sudoku Solver** using **Constraint Satisfaction Problem (CSP)** techniques.
 
-## There is two Searches 
-   1-A*
-   2-GBFS
-## it will have Contraints like Wall can be plcaed by user 
+---
 
-## Two methods Euclidean and Manhattend Distance are used
+##  Features
+-  Backtracking Search
+-  AC-3 (Arc Consistency)
+-  Forward Checking
+-  MRV Heuristic (Minimum Remaining Values)
 
-#### Running Instructions
- 1-Open vs Code
- 2-make a .py extension file
- 3-Paste the Code of Main.py
- 4-Run by ## python filename.py
+---
+
+##  Problem Definition
+Solve a 9×9 Sudoku grid such that:
+- Each row has digits 1–9
+- Each column has digits 1–9
+- Each 3×3 box has digits 1–9
+
+---
+
+##  Approach
+
+### 1. CSP Formulation
+- Variables → Each cell `(row, col)`
+- Domain → `{1–9}` or fixed value
+- Constraints → Row, Column, Box
+
+---
+
+### 2. Algorithms Used
+
+#### 🔹 AC-3
+- Enforces arc consistency
+- Reduces domain before search
+
+#### 🔹 Backtracking
+- DFS-based search
+
+#### 🔹 Forward Checking
+- Removes invalid values from neighbors
+
+#### 🔹 MRV Heuristic
+- Picks variable with smallest domain
+
+---
+
+##  Input Format
+- 9 lines of digits
+- `0` represents empty cell
+
+Example:
