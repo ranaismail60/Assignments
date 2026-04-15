@@ -1,0 +1,185 @@
+import time
+
+class SudokuCSP:
+
+
+    def generateConstraints(self):
+       
+        constraints = {}
+        for r, c in self.variables:
+            neighbors = set()
+            for i in range(9):
+                if i != c:   #Row constraint
+                    neighbors.add((r, i))
+                if i != r:   #Column constraint
+                    neighbors.add((i, c))
+
+            #3x3 Box constraint
+            br, bc = 3 * (r // 3), 3 * (c // 3)
+            for i in range(br, br + 3):
+                for j in range(bc, bc + 3):
+                    if (i, j) != (r, c): neighbors.add((i, j))
+            constraints[(r, c)] = neighbors
+        return constraints
+
+
+
+    def __init__(self, boardStr):
+        #List all variables as (row, col) tuples
+        self.variables = [(r, c) for r in range(9) for c in range(9)]
+
+        #Initialize domains(1-9) for empty cells(0)
+        self.domains = {
+            v: list(range(1, 10)) if boardStr[i] == '0' else [int(boardStr[i])] for i, v in enumerate(self.variables)
+        }
+
+        self.constraints = self.generateConstraints()
+        self.backtrackCalls = 0
+        self.backtrackFailures = 0
+
+
+
+
+    def ac3(self):
+        #Initial Arc Consistency to prune domains before search
+        queue = [(xi, xj) for xi in self.variables for xj in self.constraints[xi]]
+        while queue:
+            xi, xj = queue.pop(0)
+            if self.revise(xi, xj):
+                if not self.domains[xi]:
+                    return False
+                for xk in self.constraints[xi]:
+                    if xk != xj:
+                        queue.append((xk, xi))
+        return True
+
+
+
+
+    def revise(self, xi, xj):
+        #Removes values from domain of xi that have no consistent partner in xj
+        revised = False
+        if len(self.domains[xj]) == 1:
+            valJ = self.domains[xj][0]
+            if valJ in self.domains[xi]:
+                self.domains[xi].remove(valJ)
+                revised = True
+        return revised
+
+
+
+
+    def solve(self):
+        # using AC3 and Backtracking
+        if not self.ac3():
+            return None
+
+        #Start backtracking with pre assigned fixed values
+        initialAssignment = {v: self.domains[v][0] for v in self.variables if len(self.domains[v]) == 1}
+        return self.backtrack(initialAssignment)
+
+
+
+
+    def backtrack(self, assignment):
+        #Depth first search with Forward Checking
+        self.backtrackCalls += 1
+        if len(assignment) == 81:
+            return assignment
+        var = self.selectUnassignedVariable(assignment)
+
+        #Try values in the domain of the selected variable
+        for value in list(self.domains[var]):
+            if self.isConsistent(var, value, assignment):
+                assignment[var] = value
+                savedDomains = {v: list(d) for v, d in self.domains.items()}
+
+                #Forward Checking Prune neighbors based on current assignment
+                if self.forwardCheck(var, value):
+                    result = self.backtrack(assignment)
+                    if result:
+                        return result
+
+                # Backtrack Restore state if assignment fails
+                self.domains = savedDomains
+                del assignment[var]
+
+        self.backtrackFailures += 1
+        return None
+
+
+
+
+    def selectUnassignedVariable(self, assignment):
+        #Heuristic Minimum Remaining Values(MRV)
+        unassigned = [v for v in self.variables if v not in assignment]
+        return min(unassigned, key=lambda v: len(self.domains[v]))
+
+
+
+    def forwardCheck(self, var, value):
+        #Reduces domains of neighboring variables based on current assignment
+        for neighbor in self.constraints[var]:
+            if value in self.domains[neighbor]:
+                self.domains[neighbor].remove(value)
+                if not self.domains[neighbor]:
+                    return False
+        return True
+
+
+
+
+
+    def isConsistent(self, var, value, assignment):
+        #Checks if the value assignment violates any binary constraints.
+        for neighbor in self.constraints[var]:
+            if neighbor in assignment and assignment[neighbor] == value:
+                return False
+        return True
+
+
+
+
+def printPrettySudoku(assignment):
+    if not assignment:
+        print(">> No consistent solution possible for this board.")
+        return
+
+    for r in range(9):
+        if r > 0 and r % 3 == 0:
+            print("------+-------+------")
+
+        rowStr = ""
+        for c in range(9):
+            if c > 0 and c % 3 == 0:
+                rowStr += "| "
+            val = assignment.get((r, c), ".")
+            rowStr += f"{val} "
+        print(rowStr.strip())
+
+
+
+
+
+#Boards
+boards = {
+    "Easy": "004030050609400000005100489000060930300807002026040000453009600000004705090050200",
+    "Medium": "000030040100900000000851070002607830906010207031502900010369000000005703090070000",
+    "Hard": "102040007000080000009500304000607900540000026006405000708003400000010000200060509",
+    "Very Hard": "001007000600400300000030064380076000000000036270015000000200510700100200008009000"
+}
+
+
+
+
+for name, bStr in boards.items():
+    print(f"\n{'-'*10} Solving {name} Board {'-'*10}")
+    solver = SudokuCSP(bStr)
+    startTime = time.time()
+    solution = solver.solve()
+    endTime = time.time()
+
+    printPrettySudoku(solution)
+    print(f"\nBacktrack Calls: {solver.backtrackCalls} ")
+    print(f"Backtrack Failures: {solver.backtrackFailures} ")
+    print(f"Execution Time: {endTime - startTime:.4f} seconds")
